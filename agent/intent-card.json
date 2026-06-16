@@ -1,0 +1,134 @@
+{
+  "schema": "autobuilder.intent_card.v1",
+  "prd_source": "/home/jsy/wintermute/autobuilder/PRD-hold-guard.md",
+  "root_motivation": "The shared cargo target hold (~/wintermute/.hold/target) grew unbounded to 214G and filled the disk; hold-guard enforces a size cap with LRU eviction so the commons can never silently accrete to that state again.",
+  "user_persona": "Joe Yen — laptop operator running a fleet of Rust builds via the wintermute/hold shared cargo target; runs hold-guard as a maintenance CLI or cron-style enforcer.",
+  "intent_slug": "hold-guard",
+  "unfakeable_metric": {
+    "name": "acceptance_tests_passing_count",
+    "lower_is_better": false,
+    "harness_command": "cargo test --workspace --no-fail-fast",
+    "target": 9
+  },
+  "acceptance_criteria": [
+    {
+      "id": "AC1",
+      "level": "MUST",
+      "description": "hold-guard --help lists check, enforce, status subcommands and exits 0.",
+      "test": "tests/acceptance_ac1.rs: invoke binary with --help, assert exit 0, assert output contains 'check', 'enforce', 'status'."
+    },
+    {
+      "id": "AC2",
+      "level": "MUST",
+      "description": "check --max-size <N> against a fixture hold under the cap reports over_cap: false, selects nothing, reclaims nothing (read-only).",
+      "test": "tests/acceptance_ac2.rs: create fixture dir with small files, run check --max-size 100M, assert JSON output over_cap=false, selected_units=[]. No files removed."
+    },
+    {
+      "id": "AC3",
+      "level": "MUST",
+      "description": "check --max-size <N> against a fixture hold over the cap reports over_cap: true and lists LRU units would evict oldest-access first until projected size is below --low-water.",
+      "test": "tests/acceptance_ac3.rs: create fixture dir over cap with staggered mtimes, run check --max-size, assert over_cap=true and selected units are oldest-first, projected size below low-water."
+    },
+    {
+      "id": "AC4",
+      "level": "MUST",
+      "description": "enforce --apply removes exactly the selected LRU units, reports reclaimed_bytes > 0, brings hold below --low-water, appends ledger lines.",
+      "test": "tests/acceptance_ac4.rs: create fixture over cap, enforce --apply, assert dirs removed, reclaimed_bytes > 0, hold_bytes < low_water, ledger file has new lines."
+    },
+    {
+      "id": "AC5",
+      "level": "MUST",
+      "description": "The emitted event validates against ballast-guard's event schema (kind, severity, hold_bytes, cap_bytes, reclaimed_bytes, ts fields present with correct types).",
+      "test": "tests/acceptance_ac5.rs: run enforce --apply on fixture, parse JSON event output, assert required fields present with correct types."
+    },
+    {
+      "id": "AC6",
+      "level": "MUST",
+      "description": "A fingerprint unit with a simulated held lock / open fd is never selected for eviction even when it is the LRU candidate.",
+      "test": "tests/acceptance_ac6.rs: create fixture where oldest unit has a .cargo-lock file, run enforce --apply, assert that locked unit is not evicted."
+    },
+    {
+      "id": "AC7",
+      "level": "MUST",
+      "description": "enforce is dry-run unless --apply is given: without --apply it reclaims nothing and writes no ledger line.",
+      "test": "tests/acceptance_ac7.rs: run enforce WITHOUT --apply on over-cap fixture, assert no files removed, no ledger written."
+    },
+    {
+      "id": "AC8",
+      "level": "MUST",
+      "description": "The ledger is append-only across runs: line count only grows.",
+      "test": "tests/acceptance_ac8.rs: run enforce --apply twice, assert ledger line count after second run > after first run."
+    },
+    {
+      "id": "AC9",
+      "level": "MUST",
+      "description": "--ts <rfc3339> makes event and ledger timestamps deterministic (no wall-clock in tests).",
+      "test": "tests/acceptance_ac9.rs: run enforce --apply --ts 2026-01-01T00:00:00Z, assert event.ts and ledger line ts both equal the provided value."
+    }
+  ],
+  "scope": [
+    "Measure the size of a cargo target hold directory",
+    "LRU-evict fingerprint subdirectories when over a configured cap",
+    "Emit structured SLO events matching ballast-guard's event schema",
+    "Append evictions to a guard-ledger.jsonl",
+    "Skip units with active .cargo-lock files",
+    "Dry-run by default, --apply to actuate"
+  ],
+  "non_goals": [
+    "Network transport for events (stdout / file only)",
+    "Cross-machine coordination",
+    "Managing anything outside the configured hold path",
+    "Replacing ballast-guard (they compose, not compete)",
+    "Daemon / filesystem-watch mode (run as cron or oneshot)"
+  ],
+  "hard_constraints": {
+    "rust_edition": "2021",
+    "target_kind": "cli",
+    "deny_unsafe": true,
+    "msrv": "1.85",
+    "max_deps": 15,
+    "additional": {
+      "no_network": true,
+      "append_only_ledger": true,
+      "dry_run_default": true
+    }
+  },
+  "five_whys_trace": [
+    {
+      "why": 1,
+      "q": "Why does the hold need a size cap?",
+      "a": "Without a cap the shared cargo target hold grew to 214G and filled the disk to 97%."
+    },
+    {
+      "why": 2,
+      "q": "Why did no existing tool prevent the 214G accretion?",
+      "a": "ballast-guard caps whole-disk fossils; hold-anchor+hold-migrate dedupe across machines — but neither bounds the hold's own budget as new dependency versions accrete."
+    },
+    {
+      "why": 3,
+      "q": "Why not just run cargo clean periodically?",
+      "a": "cargo clean drops everything; LRU eviction keeps hot artifacts warm (most-recently-built crates survive), so builds stay fast while space is controlled."
+    },
+    {
+      "why": 4,
+      "q": "Why must the eviction unit be the per-fingerprint subdirectory?",
+      "a": "cargo's target layout stores per-fingerprint artifacts under target/<profile>/ with stable subdir naming, and mtime reflects last use — making LRU by fingerprint dir both possible and safe (cargo rebuilds an evicted artifact on next use)."
+    },
+    {
+      "why": 5,
+      "q": "Why reuse ballast-guard's event schema rather than invent a new one?",
+      "a": "A single notifier can surface both whole-disk SLO events and hold-budget events without bespoke glue; composability reduces surface area."
+    }
+  ],
+  "ambiguities_resolved": [
+    {
+      "question": "What counts as an 'eviction unit'?",
+      "resolution": "Per-fingerprint subdirectories under deps/, .fingerprint/, and incremental/ within the hold's target directory."
+    },
+    {
+      "question": "How to detect a held lock?",
+      "resolution": "Check for .cargo-lock file in the unit directory (same approach as hold-migrate). Open-fd check is advisory, not required for v1."
+    }
+  ],
+  "created_at": "2026-06-16T00:00:00Z"
+}

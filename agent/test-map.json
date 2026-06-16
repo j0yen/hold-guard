@@ -1,0 +1,14 @@
+{
+  "schema": "autobuilder.test_map.v1",
+  "mappings": [
+    { "ac_id": "AC1", "test_file": "tests/acceptance_ac1.rs", "test_fn": "ac1_help_lists_subcommands_exits_0" },
+    { "ac_id": "AC2", "test_file": "tests/acceptance_ac2.rs", "test_fn": "ac2_under_cap_reports_false_no_eviction" },
+    { "ac_id": "AC3", "test_file": "tests/acceptance_ac3.rs", "test_fn": "ac3_over_cap_reports_true_and_lists_lru_units" },
+    { "ac_id": "AC4", "test_file": "tests/acceptance_ac4.rs", "test_fn": "ac4_enforce_apply_removes_units_and_appends_ledger" },
+    { "ac_id": "AC5", "test_file": "tests/acceptance_ac5.rs", "test_fn": "ac5_event_schema_fields_present_and_typed" },
+    { "ac_id": "AC6", "test_file": "tests/acceptance_ac6.rs", "test_fn": "ac6_locked_unit_is_not_evicted" },
+    { "ac_id": "AC7", "test_file": "tests/acceptance_ac7.rs", "test_fn": "ac7_without_apply_dry_run_no_removal_no_ledger" },
+    { "ac_id": "AC8", "test_file": "tests/acceptance_ac8.rs", "test_fn": "ac8_ledger_append_only_line_count_grows" },
+    { "ac_id": "AC9", "test_file": "tests/acceptance_ac9.rs", "test_fn": "ac9_ts_flag_makes_timestamps_deterministic" }
+  ]
+}
