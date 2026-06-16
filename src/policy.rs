@@ -11,7 +11,7 @@ use anyhow::{bail, Result};
 /// # Errors
 ///
 /// Returns an error if the string is unparseable.
-pub fn parse_size(s: &str) -> Result<u64> {
+pub(crate) fn parse_size(s: &str) -> Result<u64> {
     let s = s.trim();
     // Try bare integer first.
     if let Ok(n) = s.parse::<u64>() {
@@ -39,7 +39,7 @@ pub fn parse_size(s: &str) -> Result<u64> {
 /// # Errors
 ///
 /// Returns an error if the low_water string is unparseable.
-pub fn resolve_low_water(low_water: Option<&str>, cap: u64) -> Result<u64> {
+pub(crate) fn resolve_low_water(low_water: Option<&str>, cap: u64) -> Result<u64> {
     match low_water {
         Some(s) => parse_size(s),
         None => Ok((cap as f64 * 0.8) as u64),
@@ -54,7 +54,7 @@ pub fn resolve_low_water(low_water: Option<&str>, cap: u64) -> Result<u64> {
 ///
 /// Returns only the units that would be evicted, in eviction order.
 #[must_use]
-pub fn select_lru(units: &[Unit], total_bytes: u64, low_water: u64) -> Vec<Unit> {
+pub(crate) fn select_lru(units: &[Unit], total_bytes: u64, low_water: u64) -> Vec<Unit> {
     if total_bytes <= low_water {
         return vec![];
     }

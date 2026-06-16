@@ -18,15 +18,15 @@ use walkdir::WalkDir;
 
 /// A single evictable unit (per-fingerprint subdirectory).
 #[derive(Debug, Clone)]
-pub struct Unit {
+pub(crate) struct Unit {
     /// Absolute path to the unit directory.
-    pub path: PathBuf,
+    pub(crate) path: PathBuf,
     /// Total bytes of all files within the unit.
-    pub bytes: u64,
+    pub(crate) bytes: u64,
     /// Most recent mtime across all files (used for LRU ordering).
-    pub last_used: SystemTime,
+    pub(crate) last_used: SystemTime,
     /// True if a `.cargo-lock` file exists in this unit directory.
-    pub is_locked: bool,
+    pub(crate) is_locked: bool,
 }
 
 /// Enumerate all evictable units under a hold directory.
@@ -37,7 +37,7 @@ pub struct Unit {
 /// # Errors
 ///
 /// Returns an error if the hold directory cannot be read.
-pub fn enumerate_units(hold: &Path) -> Result<Vec<Unit>> {
+pub(crate) fn enumerate_units(hold: &Path) -> Result<Vec<Unit>> {
     let mut units = Vec::new();
 
     // Subdirs within each profile that contain per-fingerprint units.

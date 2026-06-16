@@ -11,7 +11,7 @@ use anyhow::{Context, Result};
 /// # Errors
 ///
 /// Returns an error if any unit cannot be removed.
-pub fn remove_units(selected: &[Unit]) -> Result<()> {
+pub(crate) fn remove_units(selected: &[Unit]) -> Result<()> {
     let mut errors: Vec<String> = Vec::new();
     for unit in selected {
         let result = if unit.path.is_dir() {

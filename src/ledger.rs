@@ -25,7 +25,7 @@ struct LedgerLine {
 /// # Errors
 ///
 /// Returns an error if the ledger cannot be opened or written.
-pub fn append(ledger_path: &Path, evicted: &[Unit], total_reclaimed: u64, ts: &str) -> Result<()> {
+pub(crate) fn append(ledger_path: &Path, evicted: &[Unit], total_reclaimed: u64, ts: &str) -> Result<()> {
     if evicted.is_empty() {
         return Ok(());
     }
@@ -61,7 +61,7 @@ pub fn append(ledger_path: &Path, evicted: &[Unit], total_reclaimed: u64, ts: &s
 /// # Errors
 ///
 /// Returns an error if the ledger cannot be read.
-pub fn tail(ledger_path: &Path, n: usize) -> Result<Vec<String>> {
+pub(crate) fn tail(ledger_path: &Path, n: usize) -> Result<Vec<String>> {
     if !ledger_path.exists() {
         return Ok(vec![]);
     }

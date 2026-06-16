@@ -7,28 +7,28 @@ use serde::{Deserialize, Serialize};
 
 /// Structured SLO event — matches ballast-guard's event schema.
 #[derive(Debug, Serialize, Deserialize)]
-pub struct SloEvent {
+pub(crate) struct SloEvent {
     /// Event kind identifier.
-    pub kind: String,
+    pub(crate) kind: String,
     /// Severity: "ok" | "warn" | "critical".
-    pub severity: String,
+    pub(crate) severity: String,
     /// Hold size in bytes at event time.
-    pub hold_bytes: u64,
+    pub(crate) hold_bytes: u64,
     /// Configured cap in bytes.
-    pub cap_bytes: u64,
+    pub(crate) cap_bytes: u64,
     /// Bytes reclaimed by this enforcement (0 in dry-run).
-    pub reclaimed_bytes: u64,
+    pub(crate) reclaimed_bytes: u64,
     /// RFC 3339 timestamp.
-    pub ts: String,
+    pub(crate) ts: String,
     /// Whether --apply was given (true) or dry-run (false).
-    pub applied: bool,
+    pub(crate) applied: bool,
 }
 
 /// Build a structured SLO event.
 ///
 /// `ts` is used verbatim if non-empty; otherwise the current UTC time is used.
 #[must_use]
-pub fn build_event(
+pub(crate) fn build_event(
     hold_bytes: u64,
     cap_bytes: u64,
     reclaimed_bytes: u64,
